@@ -1,0 +1,51 @@
+services:
+  sensor:
+    build: .
+    container_name: capteur-bme280
+    command: ["python", "-m", "app.sensor"]
+    devices:
+      - "/dev/i2c-1:/dev/i2c-1"   # donne au conteneur l'accès au bus I2C de l'hôte
+    volumes:
+      - meteo-data:/data
+    env_file: .env
+    restart: unless-stopped
+
+  weather-sync:
+    build: .
+    container_name: meteo-weather-sync
+    command: ["python", "-m", "app.weather_sync"]
+    volumes:
+      - meteo-data:/data
+    env_file: .env
+    restart: unless-stopped
+
+  trainer:
+    build: .
+    container_name: meteo-trainer
+    command: ["python", "-m", "app.train_loop"]
+    volumes:
+      - meteo-data:/data
+    env_file: .env
+    restart: unless-stopped
+    # Le premier entraînement peut échouer faute de données ; le service
+    # réessaiera au cycle suivant, ce n'est pas une erreur fatale.
+    depends_on:
+      - sensor
+      - weather-sync
+
+  api:
+    build: .
+    container_name: meteo-api
+    command: ["uvicorn", "app.api:app", "--host", "0.0.0.0", "--port", "8000"]
+    ports:
+      - "8000:8000"
+    volumes:
+      - meteo-data:/data
+    env_file: .env
+    restart: unless-stopped
+    depends_on:
+      - sensor
+      - weather-sync
+
+volumes:
+  meteo-data:

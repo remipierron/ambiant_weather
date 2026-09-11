@@ -1,0 +1,489 @@
+/* Météo prévision — Chambre — thème "Frutiger Aqua" (verre, dégradés aqua,
+   reflets glossy, bulles) dans l'esprit Mac OS X Aqua / Windows Aero / iTunes
+   milieu-2000. Vanilla CSS, pas de dépendance externe. */
+
+:root {
+  color-scheme: light;
+
+  --sky-top:    #eef8ff;
+  --sky-mid:    #d3edfb;
+  --sky-bottom: #b9e1f4;
+
+  --glass-bg:        rgba(255, 255, 255, 0.55);
+  --glass-bg-strong: rgba(255, 255, 255, 0.78);
+  --glass-border:    rgba(255, 255, 255, 0.85);
+  --glass-shadow:    0 10px 30px rgba(19, 74, 118, 0.18), inset 0 1px 0 rgba(255, 255, 255, 0.9);
+
+  --text-primary:   #123a5c;
+  --text-secondary: #3d6280;
+  --text-muted:     #6f8fa8;
+
+  --grid:  rgba(18, 58, 92, 0.10);
+  --axis:  rgba(18, 58, 92, 0.30);
+  --border: rgba(255, 255, 255, 0.65);
+
+  --aqua-1:    #35b6ff;
+  --aqua-2:    #0e86e0;
+  --aqua-deep: #075b9e;
+
+  --series-room:     #2a78d6; /* bleu - chambre */
+  --series-outdoor:  #ff8a3d; /* orange - extérieur */
+  --series-humidity: #17c3a2; /* aqua - humidité */
+  --status-good:    #1fae63;
+  --status-warning: #f5a300;
+}
+
+* { box-sizing: border-box; }
+
+html, body { height: 100%; }
+
+body {
+  margin: 0;
+  min-height: 100vh;
+  color: var(--text-primary);
+  font-family: "Lucida Grande", "Segoe UI", system-ui, -apple-system, "Helvetica Neue", Arial, sans-serif;
+  background:
+    radial-gradient(ellipse 60% 40% at 15% -10%, rgba(255, 255, 255, 0.9), transparent 60%),
+    radial-gradient(ellipse 70% 50% at 110% 10%, rgba(255, 255, 255, 0.5), transparent 55%),
+    linear-gradient(180deg, var(--sky-top) 0%, var(--sky-mid) 45%, var(--sky-bottom) 100%);
+  background-attachment: fixed;
+  position: relative;
+  overflow-x: hidden;
+}
+
+/* Scrollbar façon "capsule aqua" (Mac OS X, iTunes 4-6) */
+* {
+  scrollbar-color: var(--aqua-2) rgba(255, 255, 255, 0.35);
+  scrollbar-width: thin;
+}
+
+::-webkit-scrollbar { width: 12px; height: 12px; }
+::-webkit-scrollbar-track {
+  background: rgba(255, 255, 255, 0.25);
+  border-radius: 999px;
+}
+::-webkit-scrollbar-thumb {
+  border-radius: 999px;
+  border: 2px solid rgba(255, 255, 255, 0.5);
+  background: linear-gradient(180deg, #bfe6ff 0%, var(--aqua-1) 35%, var(--aqua-2) 75%, var(--aqua-deep) 100%);
+  box-shadow: inset 0 1px 1px rgba(255, 255, 255, 0.9);
+}
+::-webkit-scrollbar-thumb:hover {
+  background: linear-gradient(180deg, #d8f2ff 0%, var(--aqua-1) 35%, var(--aqua-2) 75%, var(--aqua-deep) 100%);
+}
+
+/* Bulles décoratives flottantes, typiques de l'esthétique Aqua */
+.bg-decor {
+  position: fixed;
+  inset: 0;
+  z-index: 0;
+  pointer-events: none;
+  overflow: hidden;
+}
+
+.bg-decor span {
+  position: absolute;
+  border-radius: 50%;
+  background: radial-gradient(circle at 32% 28%, rgba(255, 255, 255, 0.85), rgba(255, 255, 255, 0.05) 60%, transparent 70%);
+  opacity: 0.55;
+  filter: blur(0.5px);
+}
+
+.bg-decor span:nth-child(1) { width: 260px; height: 260px; top: -60px; left: -60px; }
+.bg-decor span:nth-child(2) { width: 140px; height: 140px; top: 20%; right: 8%; opacity: 0.35; }
+.bg-decor span:nth-child(3) { width: 90px; height: 90px; bottom: 12%; left: 6%; opacity: 0.3; }
+.bg-decor span:nth-child(4) { width: 340px; height: 340px; bottom: -140px; right: -100px; opacity: 0.4; }
+
+.shell {
+  position: relative;
+  z-index: 1;
+  max-width: 980px;
+  margin: 0 auto;
+  padding: 1.25rem 1.25rem 3rem;
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+}
+
+/* --- Glass base --- */
+.glass {
+  background: var(--glass-bg);
+  border: 1px solid var(--glass-border);
+  border-radius: 18px;
+  box-shadow: var(--glass-shadow);
+  backdrop-filter: blur(16px) saturate(160%);
+  -webkit-backdrop-filter: blur(16px) saturate(160%);
+  position: relative;
+  overflow: hidden;
+}
+
+/* Reflet glossy en haut du panneau — signature Frutiger Aqua */
+.glass::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  border-radius: inherit;
+  background: linear-gradient(180deg, rgba(255, 255, 255, 0.55) 0%, rgba(255, 255, 255, 0.12) 42%, transparent 55%);
+  pointer-events: none;
+}
+
+/* --- Topbar --- */
+.topbar {
+  padding: 0.9rem 1.3rem;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  flex-wrap: wrap;
+  gap: 0.6rem;
+}
+
+/* Texture "brushed metal" très subtile, façon barre d'outils iTunes/Finder */
+.topbar::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  border-radius: inherit;
+  background-image: repeating-linear-gradient(
+    100deg,
+    rgba(255, 255, 255, 0.5) 0px,
+    rgba(255, 255, 255, 0.5) 1px,
+    transparent 1px,
+    transparent 3px
+  );
+  opacity: 0.12;
+  mix-blend-mode: overlay;
+  pointer-events: none;
+}
+
+.brand {
+  display: flex;
+  align-items: center;
+  gap: 0.6rem;
+}
+
+.brand-icon {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 2.2rem;
+  height: 2.2rem;
+  border-radius: 50%;
+  font-size: 1.15rem;
+  background: radial-gradient(circle at 32% 24%, #ffffff 0%, #eaf7ff 18%, var(--aqua-1) 48%, var(--aqua-2) 82%, var(--aqua-deep) 100%);
+  box-shadow:
+    0 3px 8px rgba(14, 134, 224, 0.45),
+    inset 0 2px 2px rgba(255, 255, 255, 0.9),
+    inset 0 -3px 4px rgba(7, 91, 158, 0.55);
+  position: relative;
+}
+
+/* Reflet "gel" ovale — le trait signature des boutons Aqua lickable */
+.brand-icon::after {
+  content: "";
+  position: absolute;
+  top: 12%;
+  left: 18%;
+  width: 55%;
+  height: 38%;
+  border-radius: 50%;
+  background: linear-gradient(180deg, rgba(255, 255, 255, 0.85), rgba(255, 255, 255, 0));
+  filter: blur(0.3px);
+  pointer-events: none;
+}
+
+.brand h1 {
+  font-size: 1.1rem;
+  margin: 0;
+  font-weight: 700;
+  letter-spacing: 0.01em;
+  color: var(--text-primary);
+}
+
+.status-pill {
+  font-size: 0.78rem;
+  color: var(--text-secondary);
+  background: var(--glass-bg-strong);
+  border: 1px solid var(--border);
+  border-radius: 999px;
+  padding: 0.3rem 0.75rem;
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.7);
+}
+
+.status-pill.error { color: #b8560c; }
+
+/* --- Tabbar (navigation glossy) --- */
+.tabbar {
+  padding: 0.4rem;
+  display: flex;
+  gap: 0.35rem;
+  background: linear-gradient(180deg, rgba(255, 255, 255, 0.25), rgba(255, 255, 255, 0.05));
+}
+
+.tab {
+  flex: 1;
+  text-align: center;
+  text-decoration: none;
+  font-size: 0.88rem;
+  font-weight: 600;
+  color: var(--text-secondary);
+  padding: 0.55rem 1rem;
+  border-radius: 999px;
+  transition: background 0.15s ease, color 0.15s ease, box-shadow 0.15s ease;
+  position: relative;
+}
+
+.tab:hover {
+  background: rgba(255, 255, 255, 0.35);
+}
+
+.tab.active {
+  color: #ffffff;
+  text-shadow: 0 -1px 0 rgba(7, 91, 158, 0.6);
+  background: linear-gradient(180deg, var(--aqua-1) 0%, var(--aqua-2) 55%, var(--aqua-deep) 100%);
+  box-shadow:
+    0 4px 14px rgba(14, 134, 224, 0.45),
+    inset 0 1px 0 rgba(255, 255, 255, 0.7),
+    inset 0 0 0 1px rgba(255, 255, 255, 0.25),
+    inset 0 -2px 3px rgba(6, 60, 104, 0.5);
+}
+
+.tab.active::after {
+  content: "";
+  position: absolute;
+  left: 10%;
+  right: 10%;
+  top: 3px;
+  height: 45%;
+  border-radius: 999px;
+  background: linear-gradient(180deg, rgba(255, 255, 255, 0.75), transparent);
+  pointer-events: none;
+}
+
+main {
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+}
+
+/* --- Indicator tiles (page "Indicateurs") --- */
+.tiles {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+  gap: 1rem;
+}
+
+.tile {
+  padding: 1.4rem 1.4rem 1.2rem;
+  display: flex;
+  flex-direction: column;
+  gap: 0.55rem;
+  background: var(--glass-bg);
+  border: 1px solid var(--glass-border);
+  border-radius: 18px;
+  box-shadow: var(--glass-shadow);
+  backdrop-filter: blur(16px) saturate(160%);
+  -webkit-backdrop-filter: blur(16px) saturate(160%);
+  position: relative;
+  overflow: hidden;
+}
+
+.tile::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  border-radius: inherit;
+  background: linear-gradient(180deg, rgba(255, 255, 255, 0.55) 0%, rgba(255, 255, 255, 0.12) 42%, transparent 55%);
+  pointer-events: none;
+}
+
+.tile-icon {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 2.6rem;
+  height: 2.6rem;
+  border-radius: 50%;
+  font-size: 1.3rem;
+  background: radial-gradient(circle at 32% 24%, #ffffff 0%, #eaf7ff 16%, var(--tile-color, var(--aqua-1)) 52%, var(--tile-color-deep, var(--aqua-2)) 100%);
+  box-shadow:
+    0 4px 10px rgba(14, 134, 224, 0.35),
+    inset 0 2px 2px rgba(255, 255, 255, 0.9),
+    inset 0 -3px 4px rgba(0, 0, 0, 0.2);
+  align-self: flex-start;
+  position: relative;
+}
+
+.tile-icon::after {
+  content: "";
+  position: absolute;
+  top: 12%;
+  left: 18%;
+  width: 55%;
+  height: 36%;
+  border-radius: 50%;
+  background: linear-gradient(180deg, rgba(255, 255, 255, 0.85), rgba(255, 255, 255, 0));
+  pointer-events: none;
+}
+
+.tile .label {
+  font-size: 0.78rem;
+  color: var(--text-muted);
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  font-weight: 600;
+}
+
+.tile .value {
+  font-size: 2.4rem;
+  font-weight: 700;
+  color: var(--text-primary);
+  font-variant-numeric: proportional-nums;
+  text-shadow: 0 1px 0 rgba(255, 255, 255, 0.6);
+}
+
+.tile .sub {
+  font-size: 0.8rem;
+  color: var(--text-secondary);
+}
+
+/* --- Chart cards (page "Prévisions") --- */
+.chart-card {
+  padding: 1.2rem 1.2rem 0.7rem;
+  background: var(--glass-bg);
+  border: 1px solid var(--glass-border);
+  border-radius: 18px;
+  box-shadow: var(--glass-shadow);
+  backdrop-filter: blur(16px) saturate(160%);
+  -webkit-backdrop-filter: blur(16px) saturate(160%);
+  position: relative;
+  overflow: hidden;
+}
+
+.chart-card::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  border-radius: inherit;
+  background: linear-gradient(180deg, rgba(255, 255, 255, 0.55) 0%, rgba(255, 255, 255, 0.12) 42%, transparent 55%);
+  pointer-events: none;
+}
+
+.chart-card h2 {
+  font-size: 1rem;
+  font-weight: 700;
+  margin: 0 0 0.45rem;
+  color: var(--text-primary);
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.legend {
+  display: flex;
+  gap: 1rem;
+  flex-wrap: wrap;
+  font-size: 0.8rem;
+  color: var(--text-secondary);
+  margin-bottom: 0.5rem;
+}
+
+.legend-item { display: flex; align-items: center; gap: 0.4rem; }
+
+.legend-swatch {
+  width: 14px;
+  height: 3px;
+  border-radius: 2px;
+  display: inline-block;
+  box-shadow: 0 0 4px currentColor;
+}
+
+.legend-swatch.dashed {
+  background: repeating-linear-gradient(90deg, currentColor 0 6px, transparent 6px 10px);
+  height: 2px;
+  box-shadow: none;
+}
+
+.chart-wrap {
+  position: relative;
+  width: 100%;
+  overflow-x: auto;
+  border-radius: 12px;
+}
+
+canvas {
+  width: 100%;
+  height: 220px;
+  display: block;
+}
+
+.tooltip {
+  position: absolute;
+  pointer-events: none;
+  background: var(--glass-bg-strong);
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  padding: 0.45rem 0.65rem;
+  font-size: 0.78rem;
+  box-shadow: 0 6px 18px rgba(19, 74, 118, 0.25), inset 0 1px 0 rgba(255, 255, 255, 0.7);
+  backdrop-filter: blur(10px);
+  opacity: 0;
+  transition: opacity 0.08s ease;
+  white-space: nowrap;
+  z-index: 5;
+}
+
+.tooltip .t-time {
+  color: var(--text-muted);
+  margin-bottom: 0.25rem;
+}
+
+.tooltip .t-row { display: flex; align-items: center; gap: 0.35rem; }
+
+.empty-state {
+  color: var(--text-muted);
+  font-size: 0.9rem;
+  padding: 2rem 0;
+  text-align: center;
+}
+
+.meta {
+  padding: 1rem 1.2rem 1.1rem;
+  font-size: 0.82rem;
+  color: var(--text-secondary);
+}
+
+.meta table {
+  border-collapse: collapse;
+  margin-top: 0.5rem;
+  font-variant-numeric: tabular-nums;
+  width: 100%;
+}
+
+.meta td, .meta th {
+  padding: 0.3rem 0.6rem 0.3rem 0;
+  text-align: left;
+}
+
+.meta thead th {
+  color: var(--text-muted);
+  font-size: 0.72rem;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  border-bottom: 1px solid var(--border);
+}
+
+.meta tbody tr:not(:last-child) td {
+  border-bottom: 1px solid var(--grid);
+}
+
+footer.foot-note {
+  text-align: center;
+  font-size: 0.72rem;
+  color: var(--text-muted);
+  padding: 0.5rem 0 0;
+}
+
+@media (max-width: 480px) {
+  .brand h1 { font-size: 0.95rem; }
+  .tile .value { font-size: 2rem; }
+}

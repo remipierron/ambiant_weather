@@ -1,0 +1,21 @@
+# --- Capteur BME280 ---
+smbus2
+pytz
+RPi.bme280
+
+# --- Stockage / config ---
+python-dotenv
+
+# --- Météo externe (Open-Meteo) ---
+requests
+
+# --- Feature engineering / modèles ---
+pandas
+numpy
+scikit-learn
+lightgbm
+joblib
+
+# --- API + tableau de bord ---
+fastapi
+uvicorn[standard]
