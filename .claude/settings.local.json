@@ -1,0 +1,9 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(pip3 --version)",
+      "Bash(python3 -c \"import sys; print\\(sys.executable\\)\")",
+      "WebFetch(domain:nominatim.openstreetmap.org)"
+    ]
+  }
+}
