@@ -306,6 +306,28 @@ function renderTiles(latest) {
   ].join('');
 }
 
+function renderWindowAdvice(advice) {
+  const el = document.getElementById('window-advice');
+  if (!el) return;
+
+  if (!advice || !advice.available) {
+    el.classList.remove('close-now', 'keep-open');
+    el.innerHTML = `<div class="advice-icon">🪟</div><div class="advice-text">${advice ? advice.reason : "Conseil fenêtres indisponible."}</div>`;
+    return;
+  }
+
+  el.classList.toggle('close-now', advice.should_close === true);
+  el.classList.toggle('keep-open', advice.should_close === false);
+
+  const sub = `Intérieur actuel : ${advice.current_indoor_temperature.toFixed(1)} °C`;
+  el.innerHTML = `
+    <div class="advice-icon">${advice.should_close ? '🪟' : '🌬️'}</div>
+    <div class="advice-text">
+      <div class="advice-message">${advice.message}</div>
+      <div class="advice-sub">${sub}</div>
+    </div>`;
+}
+
 function renderMeta(metadata) {
   const el = document.getElementById('model-meta');
   if (!metadata) {
@@ -354,7 +376,10 @@ async function refresh() {
     statusEl.textContent = `Mis à jour à ${new Date().toLocaleTimeString('fr-FR')}`;
     statusEl.classList.remove('error');
 
-    if (hasTiles) renderTiles(latest);
+    if (hasTiles) {
+      renderTiles(latest);
+      fetchJson('/api/window-advice', null).then(renderWindowAdvice);
+    }
 
     if (hasCharts) {
       const [history, forecast, predictions, metadata] = await Promise.all([

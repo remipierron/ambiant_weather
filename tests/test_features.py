@@ -46,11 +46,28 @@ def test_build_training_frame_shapes_and_no_nan():
 
     assert feature_cols == FEATURE_COLUMNS
     assert not df.empty
-    # 24h de lag + 1h de décalage cible = 25 lignes perdues au minimum
-    assert len(df) <= n - 25
+    # Les lags se replient sur la valeur courante quand l'historique manque
+    # (voir app.features) : seule l'heure la plus récente est perdue, à
+    # cause du décalage -1h utilisé pour construire la cible/météo "next".
+    assert len(df) == n - 1
     for col in feature_cols + TARGET_COLS:
         assert col in df.columns
         assert not df[col].isna().any()
+
+
+def test_lag_falls_back_to_current_value_when_history_missing():
+    """Avec peu d'historique (< 24h), room_*_lag24 doit valoir room_* (repli),
+    pas être absent — c'est ce qui permet d'entraîner dès le premier jour."""
+    start = datetime(2026, 1, 1, tzinfo=timezone.utc)
+    n = 5
+    room_fn = lambda i: (20.0 + i, 45.0, 1015.0)
+    weather_fn = lambda i: (10.0, 60.0, 1012.0, 50.0, 3.0, 0.0)
+    room_rows, weather_rows = _make_rows(n, start, room_fn, weather_fn)
+
+    df, _ = build_training_frame(room_rows, weather_rows)
+
+    assert not df.empty
+    assert (df["room_temperature_lag24"] == df["room_temperature"]).all()
 
 
 def test_build_training_frame_empty_when_no_overlap():

@@ -64,11 +64,21 @@ Le capteur possède 6 broches (VCC, GND, CS, MISO/ADDR, SDA/MOSI, SCL/SCK), lues
 
 ### ✅ Étape 4 — Modèle de prédiction (terminée)
 
-- **Feature engineering** (`app/features.py`) : modèle "1 pas" prédisant l'état de la chambre à t+1 à partir de l'état courant + valeurs décalées (1h/3h/6h/24h), de la météo extérieure à t et t+1 (connue à l'avance via les prévisions), et de features calendaires (heure, jour de semaine, mois, week-end).
+- **Feature engineering** (`app/features.py`) : modèle "1 pas" prédisant l'état de la chambre à t+1 à partir de l'état courant + valeurs décalées (1h/3h/6h/24h), de la météo extérieure à t et t+1 (connue à l'avance via les prévisions), et de features calendaires (heure, jour de semaine, mois, week-end). Quand l'historique ne remonte pas encore assez loin pour calculer un lag (ex. `lag24` avant 24h de mesures), on retombe sur la valeur courante plutôt que de rejeter la ligne — un premier modèle peut donc s'entraîner dès `MIN_TRAINING_ROWS` heures de données (24h par défaut, au lieu de 72h+lags précédemment), plutôt que d'attendre plusieurs jours.
 - **Entraînement** (`app/train.py`) : régression linéaire (baseline) + gradient boosting **LightGBM** (modèle retenu) par variable, découpage train/test chronologique, métriques MAE/RMSE sauvegardées à côté des modèles.
 - **Prédiction multi-heures** (`app/predict.py`) : application récursive du modèle 1-pas jusqu'à `FORECAST_HORIZON_HOURS` (48h par défaut) — la sortie prédite à t+1 sert d'entrée pour prédire t+2, etc.
-- **Exposition** (`app/api.py`) : API FastAPI (`/api/latest`, `/api/history`, `/api/forecast`, `/api/predictions`, `/api/metadata`) + tableau de bord HTML (`/`) avec graphiques température/humidité/pression (mesuré vs prédit, extérieur observé vs prévu).
+- **Exposition** (`app/api.py`) : API FastAPI (`/api/latest`, `/api/history`, `/api/forecast`, `/api/predictions`, `/api/metadata`, `/api/window-advice`) + tableau de bord HTML (`/`) avec graphiques température/humidité/pression (mesuré vs prédit, extérieur observé vs prévu).
 - Orchestration en boucle (`app/train_loop.py`) : ré-entraînement toutes les `TRAIN_INTERVAL_HOURS` (24h par défaut), régénération des prédictions toutes les `PREDICT_INTERVAL_MINUTES` (30 min par défaut).
+
+### ✅ Étape 5 — Conseil "fenêtres" (terminée)
+
+Le modèle de prédiction ci-dessus a un défaut pratique : il lui faut plusieurs jours de données croisées chambre + météo avant d'être exploitable, et son utilité au quotidien (prédire température/humidité/pression 48h à l'avance) reste indirecte pour une décision simple comme "dois-je fermer les fenêtres ?".
+
+- **`app/window_advisor.py`** : indique l'heure optimale pour fermer les fenêtres le matin, en ne s'appuyant que sur la dernière mesure de la chambre et les prévisions météo (`weather_forecast`) — **disponible dès le premier jour**, sans attendre l'entraînement d'un modèle.
+  - Principe : tant que la température extérieure prévue reste sous la température intérieure, l'aération continue de rafraîchir la pièce ; dès que l'extérieur la dépasse, continuer à ouvrir la réchaufferait — c'est l'heure de fermeture conseillée.
+  - La température intérieure est projetée dans le temps en prolongeant sa pente récente (régression linéaire sur les `WINDOW_ADVICE_TREND_LOOKBACK_HOURS` dernières heures, 3h par défaut), pour tenir compte du refroidissement en cours pendant l'aération.
+  - Recherche du croisement sur les `WINDOW_ADVICE_LOOKAHEAD_HOURS` prochaines heures (15h par défaut).
+- Exposé via `GET /api/window-advice` et affiché en bandeau en haut du tableau de bord (`/`).
 
 ## Architecture logicielle (services Docker)
 
@@ -153,8 +163,9 @@ Modèle retenu pour démarrer : **gradient boosting sur variables tabulaires**, 
 - `app/train.py` — entraînement des modèles (baseline + LightGBM)
 - `app/train_loop.py` — boucle ré-entraînement + prédiction
 - `app/predict.py` — génération des prédictions multi-heures (récursif)
+- `app/window_advisor.py` — conseil d'heure de fermeture des fenêtres (sans dépendre des modèles entraînés)
 - `app/api.py` + `app/static/` — API FastAPI + tableau de bord
-- `tests/` — tests unitaires (features, DB) et test d'intégration bout-en-bout
+- `tests/` — tests unitaires (features, DB, conseil fenêtres) et test d'intégration bout-en-bout
 - `Dockerfile` — image commune aux 4 services
 - `docker-compose.yml` — orchestration des 4 services + volume partagé
 - `.env` / `.env.example` — configuration (localisation, intervalles, chemins)

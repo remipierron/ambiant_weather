@@ -54,10 +54,22 @@ class Settings:
 
     # --- Entraînement / prédiction ---
     train_interval_hours: int = int(os.getenv("TRAIN_INTERVAL_HOURS", "24"))
-    min_training_rows: int = int(os.getenv("MIN_TRAINING_ROWS", "72"))
+    # Abaissé de 72 à 24 : grâce au repli des lags sur la valeur courante
+    # (voir app.features), un premier modèle exploitable n'a plus besoin
+    # d'attendre plusieurs jours de mesures.
+    min_training_rows: int = int(os.getenv("MIN_TRAINING_ROWS", "24"))
     test_fraction: float = float(os.getenv("TEST_FRACTION", "0.2"))
     forecast_horizon_hours: int = int(os.getenv("FORECAST_HORIZON_HOURS", "48"))
     predict_interval_minutes: int = int(os.getenv("PREDICT_INTERVAL_MINUTES", "30"))
+
+    # --- Conseil fenêtres (voir app.window_advisor) ---
+    # Horizon (en heures, à partir de maintenant) sur lequel on cherche le
+    # croisement température extérieure / intérieure pour conseiller l'heure
+    # de fermeture des fenêtres.
+    window_advice_lookahead_hours: int = int(os.getenv("WINDOW_ADVICE_LOOKAHEAD_HOURS", "15"))
+    # Fenêtre (en heures) sur laquelle on estime la pente récente de la
+    # température intérieure (pour projeter son évolution pendant l'aération).
+    window_advice_trend_lookback_hours: int = int(os.getenv("WINDOW_ADVICE_TREND_LOOKBACK_HOURS", "3"))
 
     # --- API ---
     api_host: str = os.getenv("API_HOST", "0.0.0.0")
