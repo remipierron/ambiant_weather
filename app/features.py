@@ -14,6 +14,13 @@ obtenues en ré-appliquant ce modèle heure par heure de façon récursive
 (cf. `app.predict`) : la sortie prédite à t+1 sert d'entrée "courante" pour
 prédire t+2, etc. C'est l'approche la plus simple et la plus robuste pour
 démarrer avec peu de données (cf. choix du gradient boosting dans le README).
+
+Note sur les valeurs décalées (`room_*_lag*`) : quand l'historique ne remonte
+pas encore assez loin pour calculer un lag (ex. `lag24` avant 24h de mesures),
+on retombe sur la valeur courante plutôt que de rejeter la ligne entière.
+C'est exactement ce que fait déjà `build_inference_row` en prédiction ; le
+faire aussi à l'entraînement évite d'exiger plusieurs jours de données avant
+de pouvoir entraîner un premier modèle (voir `MIN_TRAINING_ROWS`).
 """
 
 from __future__ import annotations
@@ -91,7 +98,10 @@ def build_training_frame(room_rows: Sequence, weather_rows: Sequence) -> tuple[p
 
     for col in ROOM_COLS:
         for lag in LAG_HOURS:
-            df[f"{col}_lag{lag}"] = df[col].shift(lag)
+            # Repli sur la valeur courante si le lag n'est pas encore disponible
+            # (voir la note en tête de fichier) : ne coûte que peu de précision
+            # sur les toutes premières lignes, et évite de perdre 24h de données.
+            df[f"{col}_lag{lag}"] = df[col].shift(lag).fillna(df[col])
 
     for col in OUT_COLS:
         df[f"{col}_next"] = df[col].shift(-1)
@@ -102,7 +112,10 @@ def build_training_frame(room_rows: Sequence, weather_rows: Sequence) -> tuple[p
     target_index = df.index + pd.Timedelta(hours=1)
     df = add_calendar_features(df, target_index)
 
-    required = FEATURE_COLUMNS + TARGET_COLS
+    # Les lags sont désormais toujours renseignés (repli ci-dessus) ; seules
+    # les colonnes météo décalées d'1h et la cible peuvent encore être NaN
+    # (première/dernière heure de la plage disponible).
+    required = OUT_COLS + OUT_NEXT_COLS + TARGET_COLS
     df = df.dropna(subset=required)
 
     return df, FEATURE_COLUMNS
