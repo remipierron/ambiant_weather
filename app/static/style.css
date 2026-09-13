@@ -265,6 +265,39 @@ main {
   gap: 1rem;
 }
 
+/* --- Conseil fenêtres (page "Indicateurs") --- */
+.window-advice {
+  padding: 1.1rem 1.3rem;
+  display: flex;
+  align-items: center;
+  gap: 0.9rem;
+  border-left: 4px solid var(--aqua-2);
+}
+
+.window-advice.close-now { border-left-color: var(--status-warning); }
+.window-advice.keep-open { border-left-color: var(--status-good); }
+
+.window-advice .advice-icon {
+  font-size: 1.6rem;
+  flex: 0 0 auto;
+}
+
+.window-advice .advice-text {
+  color: var(--text-secondary);
+  font-size: 0.9rem;
+}
+
+.window-advice .advice-message {
+  color: var(--text-primary);
+  font-weight: 700;
+  font-size: 0.98rem;
+}
+
+.window-advice .advice-sub {
+  margin-top: 0.15rem;
+  font-size: 0.8rem;
+}
+
 /* --- Indicator tiles (page "Indicateurs") --- */
 .tiles {
   display: grid;
