@@ -26,6 +26,7 @@ from app.db import (
     init_db,
     rows_to_dicts,
 )
+from app.window_advisor import compute_window_advice
 
 STATIC_DIR = Path(__file__).parent / "static"
 
@@ -66,6 +67,16 @@ def forecast() -> list[dict]:
 @app.get("/api/predictions")
 def predictions() -> list[dict]:
     return rows_to_dicts(get_latest_predictions())
+
+
+@app.get("/api/window-advice")
+def window_advice() -> dict:
+    """Heure conseillée pour fermer les fenêtres, à partir des données disponibles
+
+    (dernière mesure de la chambre + prévisions météo), sans dépendre des
+    modèles entraînés — disponible dès le premier jour d'utilisation.
+    """
+    return compute_window_advice()
 
 
 @app.get("/api/metadata")
