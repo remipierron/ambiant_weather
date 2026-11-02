@@ -87,3 +87,30 @@ def test_recommends_closing_when_outdoor_crosses_above_indoor(tmp_path):
     assert advice["available"] is True
     assert advice["should_close"] is True
     assert advice["recommended_close_time"] is not None
+
+
+def test_no_open_advice_when_cold_outside(tmp_path):
+    db_path = str(tmp_path / "meteo.db")
+    init_db(db_path)
+    now = datetime.now(timezone.utc)
+    insert_room_measurement(now.isoformat(timespec="seconds"), 21.0, 45.0, 1015.0, db_path=db_path)
+
+    forecast = [
+        {
+            "ts": (now + timedelta(hours=h)).replace(minute=0, second=0, microsecond=0).isoformat(),
+            "temperature": 3.0,
+            "humidity": 60.0,
+            "pressure": 1012.0,
+            "cloud_cover": 20.0,
+            "wind_speed": 3.0,
+            "precipitation": 0.0,
+        }
+        for h in range(0, 16)
+    ]
+    insert_weather_forecast(now.isoformat(timespec="seconds"), forecast, db_path=db_path)
+
+    advice = compute_window_advice(db_path=db_path)
+    assert advice["available"] is True
+    assert advice["cold_outside"] is True
+    assert advice["should_close"] is None
+    assert "fermées" in advice["message"]

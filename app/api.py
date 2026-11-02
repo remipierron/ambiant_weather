@@ -33,6 +33,15 @@ STATIC_DIR = Path(__file__).parent / "static"
 app = FastAPI(title="Météo prévision chambre", version="1.0")
 
 
+@app.middleware("http")
+async def _revalidate_cache(request, call_next):
+    """Oblige le navigateur à revalider : sans cet en-tête, il garde les anciens
+    fichiers statiques après un déploiement (ETag conservé, réponse 304 si inchangé)."""
+    response = await call_next(request)
+    response.headers["Cache-Control"] = "no-cache"
+    return response
+
+
 @app.on_event("startup")
 def _startup() -> None:
     init_db()
@@ -49,6 +58,29 @@ def latest() -> dict:
     if row is None:
         raise HTTPException(status_code=404, detail="Aucune mesure disponible.")
     return dict(row)
+
+
+@app.get("/api/outdoor")
+def outdoor() -> dict:
+    """Conditions extérieures actuelles (Open-Meteo).
+
+    L'archive d'observations a quelques heures de retard : on prend d'abord la
+    valeur de l'heure en cours dans la dernière prévision, sinon la dernière
+    observation disponible.
+    """
+    now = datetime.now(timezone.utc).replace(minute=0, second=0, microsecond=0)
+    candidates = [
+        r for r in get_latest_forecast_batch()
+        if r["temperature"] is not None and datetime.fromisoformat(r["target_ts"]) <= now + timedelta(minutes=30)
+    ]
+    if candidates:
+        row = max(candidates, key=lambda r: r["target_ts"])
+        return {"ts": row["target_ts"], "temperature": row["temperature"],
+                "humidity": row["humidity"], "pressure": row["pressure"]}
+    observed = get_weather_observed(start=(now - timedelta(hours=24)).isoformat(timespec="seconds"))
+    if observed:
+        return rows_to_dicts(observed[-1:])[0]
+    raise HTTPException(status_code=404, detail="Aucune donnée extérieure disponible.")
 
 
 @app.get("/api/history")
@@ -91,12 +123,6 @@ def metadata() -> dict:
 def dashboard() -> FileResponse:
     """Page 1 — les 3 indicateurs relevés (température, humidité, pression)."""
     return FileResponse(STATIC_DIR / "index.html")
-
-
-@app.get("/previsions")
-def previsions_page() -> FileResponse:
-    """Page 2 — graphiques de prévisions (mesuré/prédit, observé/prévu)."""
-    return FileResponse(STATIC_DIR / "previsions.html")
 
 
 app.mount("/static", StaticFiles(directory=STATIC_DIR), name="static")
