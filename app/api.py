@@ -33,6 +33,15 @@ STATIC_DIR = Path(__file__).parent / "static"
 app = FastAPI(title="Météo prévision chambre", version="1.0")
 
 
+@app.middleware("http")
+async def _revalidate_cache(request, call_next):
+    """Oblige le navigateur à revalider : sans cet en-tête, il garde les anciens
+    fichiers statiques après un déploiement (ETag conservé, réponse 304 si inchangé)."""
+    response = await call_next(request)
+    response.headers["Cache-Control"] = "no-cache"
+    return response
+
+
 @app.on_event("startup")
 def _startup() -> None:
     init_db()
