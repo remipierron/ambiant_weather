@@ -93,10 +93,4 @@ def dashboard() -> FileResponse:
     return FileResponse(STATIC_DIR / "index.html")
 
 
-@app.get("/previsions")
-def previsions_page() -> FileResponse:
-    """Page 2 — graphiques de prévisions (mesuré/prédit, observé/prévu)."""
-    return FileResponse(STATIC_DIR / "previsions.html")
-
-
 app.mount("/static", StaticFiles(directory=STATIC_DIR), name="static")

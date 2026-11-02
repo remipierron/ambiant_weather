@@ -111,8 +111,21 @@ def compute_window_advice(db_path: str | None = None) -> dict:
         if crossing_ts is None and outdoor >= indoor_projected:
             crossing_ts = row["ts"]
 
+    current_outdoor = hourly[0]["outdoor_temperature"]
+
     advice: dict
-    if crossing_ts is None:
+    if current_outdoor < settings.window_advice_min_outdoor_temp:
+        # Trop froid dehors : aérer ferait surtout perdre de la chaleur.
+        advice = {
+            "should_close": None,
+            "cold_outside": True,
+            "recommended_close_time": None,
+            "message": (
+                f"Il fait froid dehors ({current_outdoor:.1f} °C) : "
+                "gardez les fenêtres fermées."
+            ),
+        }
+    elif crossing_ts is None:
         advice = {
             "should_close": False,
             "recommended_close_time": None,
@@ -140,6 +153,7 @@ def compute_window_advice(db_path: str | None = None) -> dict:
         {
             "available": True,
             "as_of": now.isoformat(timespec="seconds"),
+            "current_outdoor_temperature": current_outdoor,
             "current_indoor_temperature": indoor_temp0,
             "indoor_trend_per_hour": round(indoor_slope, 3),
             "hourly": hourly,

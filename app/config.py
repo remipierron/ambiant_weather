@@ -67,6 +67,9 @@ class Settings:
     # croisement température extérieure / intérieure pour conseiller l'heure
     # de fermeture des fenêtres.
     window_advice_lookahead_hours: int = int(os.getenv("WINDOW_ADVICE_LOOKAHEAD_HOURS", "15"))
+    # En dessous de cette température extérieure (°C), on ne recommande pas
+    # d'ouvrir les fenêtres : il fait trop froid dehors.
+    window_advice_min_outdoor_temp: float = float(os.getenv("WINDOW_ADVICE_MIN_OUTDOOR_TEMP", "12"))
     # Fenêtre (en heures) sur laquelle on estime la pente récente de la
     # température intérieure (pour projeter son évolution pendant l'aération).
     window_advice_trend_lookback_hours: int = int(os.getenv("WINDOW_ADVICE_TREND_LOOKBACK_HOURS", "3"))
