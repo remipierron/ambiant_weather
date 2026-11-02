@@ -4,26 +4,29 @@ function getColor(varName) {
   return getComputedStyle(document.documentElement).getPropertyValue(varName).trim();
 }
 
-function renderTiles(latest) {
-  const tiles = document.getElementById('tiles');
-  const lastUpdate = latest ? new Date(latest.ts).toLocaleTimeString('fr-FR') : '';
-
-  const tileHtml = (icon, color, colorDeep, label, value, unit, sub) => `
-    <div class="tile" style="--tile-color:${color}; --tile-color-deep:${colorDeep}">
+function tileHtml(icon, color, label, value, unit, sub) {
+  return `
+    <div class="tile" style="--tile-color:${color}; --tile-color-deep:${color}">
       <div class="tile-icon">${icon}</div>
       <div class="label">${label}</div>
       <div class="value">${value !== null && value !== undefined ? value.toFixed(1) + unit : '—'}</div>
       ${sub ? `<div class="sub">${sub}</div>` : ''}
     </div>`;
+}
+
+function renderTiles(elId, data, suffix, verb) {
+  const el = document.getElementById(elId);
+  const when = data ? new Date(data.ts).toLocaleTimeString('fr-FR', { hour: '2-digit', minute: '2-digit' }) : '';
+  const sub = when ? `${verb} à ${when}` : '';
 
   const colorRoom = getColor('--series-room');
   const colorHumidity = getColor('--series-humidity');
   const colorOutdoor = getColor('--series-outdoor');
 
-  tiles.innerHTML = [
-    tileHtml('🌡️', colorRoom, colorRoom, 'Température relevée', latest?.temperature, ' °C', lastUpdate ? `Relevé à ${lastUpdate}` : ''),
-    tileHtml('💧', colorHumidity, colorHumidity, 'Humidité relevée', latest?.humidity, ' %', lastUpdate ? `Relevé à ${lastUpdate}` : ''),
-    tileHtml('🌀', colorOutdoor, colorOutdoor, 'Pression relevée', latest?.pressure, ' hPa', lastUpdate ? `Relevé à ${lastUpdate}` : ''),
+  el.innerHTML = [
+    tileHtml('🌡️', colorRoom, `Température${suffix}`, data?.temperature, ' °C', sub),
+    tileHtml('💧', colorHumidity, `Humidité${suffix}`, data?.humidity, ' %', sub),
+    tileHtml('🌀', colorOutdoor, `Pression${suffix}`, data?.pressure, ' hPa', sub),
   ].join('');
 }
 
@@ -84,7 +87,8 @@ async function refresh() {
     statusEl.textContent = `Mis à jour à ${new Date().toLocaleTimeString('fr-FR')}`;
     statusEl.classList.remove('error');
 
-    renderTiles(latest);
+    renderTiles('tiles', latest, ' relevée', 'Relevé');
+    fetchJson('/api/outdoor', null).then((o) => renderTiles('tiles-outdoor', o, ' extérieure', 'Donnée'));
     fetchJson('/api/window-advice', null).then(renderWindowAdvice);
   } catch (err) {
     statusEl.textContent = 'Erreur de connexion à l\'API.';

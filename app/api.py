@@ -51,6 +51,29 @@ def latest() -> dict:
     return dict(row)
 
 
+@app.get("/api/outdoor")
+def outdoor() -> dict:
+    """Conditions extérieures actuelles (Open-Meteo).
+
+    L'archive d'observations a quelques heures de retard : on prend d'abord la
+    valeur de l'heure en cours dans la dernière prévision, sinon la dernière
+    observation disponible.
+    """
+    now = datetime.now(timezone.utc).replace(minute=0, second=0, microsecond=0)
+    candidates = [
+        r for r in get_latest_forecast_batch()
+        if r["temperature"] is not None and datetime.fromisoformat(r["target_ts"]) <= now + timedelta(minutes=30)
+    ]
+    if candidates:
+        row = max(candidates, key=lambda r: r["target_ts"])
+        return {"ts": row["target_ts"], "temperature": row["temperature"],
+                "humidity": row["humidity"], "pressure": row["pressure"]}
+    observed = get_weather_observed(start=(now - timedelta(hours=24)).isoformat(timespec="seconds"))
+    if observed:
+        return rows_to_dicts(observed[-1:])[0]
+    raise HTTPException(status_code=404, detail="Aucune donnée extérieure disponible.")
+
+
 @app.get("/api/history")
 def history(hours: int = 72) -> dict:
     start = (datetime.now(timezone.utc) - timedelta(hours=hours)).isoformat(timespec="seconds")
