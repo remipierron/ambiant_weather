@@ -526,3 +526,49 @@ footer.foot-note {
   font-size: 1.05rem;
   color: var(--text-secondary);
 }
+
+.tile .value .unit { font-size: 0.6em; font-weight: 600; margin-left: 0.1em; }
+
+/* --- Mobile (iPhone) : les 6 indicateurs tiennent sur un seul écran ---
+   3 tuiles par ligne, tuiles compactes, en-têtes resserrés. */
+@media (max-width: 600px) {
+  .shell {
+    padding: calc(0.6rem + env(safe-area-inset-top)) 1rem calc(0.6rem + env(safe-area-inset-bottom));
+    gap: 0.6rem;
+  }
+  main { gap: 0.5rem; }
+
+  .topbar { padding: 0.55rem 0.8rem; gap: 0.4rem; }
+  .brand { gap: 0.45rem; }
+  .brand-icon { width: 1.8rem; height: 1.8rem; font-size: 0.95rem; }
+  .brand h1 { font-size: 0.9rem; }
+  .status-pill { font-size: 0.7rem; padding: 0.2rem 0.6rem; }
+
+  .window-advice { padding: 0.7rem 0.85rem; gap: 0.6rem; }
+  .window-advice .advice-icon { font-size: 1.3rem; }
+  .window-advice .advice-text { font-size: 0.8rem; }
+  .window-advice .advice-message { font-size: 0.88rem; }
+  .window-advice .advice-sub { font-size: 0.72rem; }
+
+  .section-title { margin: 0.4rem 0 0; font-size: 0.92rem; }
+
+  .tiles {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+    gap: 0.5rem;
+  }
+  .tile {
+    padding: 0.65rem 0.55rem 0.6rem;
+    gap: 0.3rem;
+    border-radius: 14px;
+  }
+  .tile-icon { width: 1.9rem; height: 1.9rem; font-size: 0.95rem; }
+  .tile .label { font-size: 0.64rem; letter-spacing: 0.03em; }
+  .tile .label-suffix { display: none; } /* déjà indiqué par le titre de section */
+  .tile .value {
+    font-size: clamp(1rem, 4.6vw, 1.4rem);
+    white-space: nowrap;
+  }
+  .tile .sub { font-size: 0.62rem; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+
+  footer.foot-note { font-size: 0.62rem; padding: 0; }
+}

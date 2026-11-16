@@ -9,7 +9,7 @@ function tileHtml(icon, color, label, value, unit, sub) {
     <div class="tile" style="--tile-color:${color}; --tile-color-deep:${color}">
       <div class="tile-icon">${icon}</div>
       <div class="label">${label}</div>
-      <div class="value">${value !== null && value !== undefined ? value.toFixed(1) + unit : '—'}</div>
+      <div class="value">${value !== null && value !== undefined ? `${value.toFixed(1)}<span class="unit">${unit}</span>` : '—'}</div>
       ${sub ? `<div class="sub">${sub}</div>` : ''}
     </div>`;
 }
@@ -18,15 +18,16 @@ function renderTiles(elId, data, suffix, verb) {
   const el = document.getElementById(elId);
   const when = data ? new Date(data.ts).toLocaleTimeString('fr-FR', { hour: '2-digit', minute: '2-digit' }) : '';
   const sub = when ? `${verb} à ${when}` : '';
+  const sfx = suffix ? `<span class="label-suffix">${suffix}</span>` : '';
 
   const colorRoom = getColor('--series-room');
   const colorHumidity = getColor('--series-humidity');
   const colorOutdoor = getColor('--series-outdoor');
 
   el.innerHTML = [
-    tileHtml('🌡️', colorRoom, `Température${suffix}`, data?.temperature, ' °C', sub),
-    tileHtml('💧', colorHumidity, `Humidité${suffix}`, data?.humidity, ' %', sub),
-    tileHtml('🌀', colorOutdoor, `Pression${suffix}`, data?.pressure, ' hPa', sub),
+    tileHtml('🌡️', colorRoom, `Température${sfx}`, data?.temperature, ' °C', sub),
+    tileHtml('💧', colorHumidity, `Humidité${sfx}`, data?.humidity, ' %', sub),
+    tileHtml('🌀', colorOutdoor, `Pression${sfx}`, data?.pressure, ' hPa', sub),
   ].join('');
 }
 
